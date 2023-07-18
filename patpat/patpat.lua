@@ -166,7 +166,7 @@ function pings.patpat(a, b, c)
          )
       end
 
-      pcall(blockAvatarVars["petpet.playerHead"], myUuid, config.holdFor)
+      pcall(blockAvatarVars["petpet.playerHead"], myUuid, config.holdFor, pos.x, pos.y, pos.z)
    else -- entity
       local entity = world.getEntity(unpackUuid(a))
 
