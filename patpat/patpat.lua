@@ -60,7 +60,6 @@ local myPatters = {player = {}, head = {}}
 function events.tick()
    for pattersGroupName, pattersGroup in pairs(myPatters) do
       local patted = false
-      local players = {}
       for uuid, time in pairs(pattersGroup) do
          if time <= 0 then
             callEvent(pattersGroupName, "onUnpat")
@@ -69,11 +68,10 @@ function events.tick()
          else
             pattersGroup[uuid] = time - 1
             patted = true
-            table.insert(players, world.getEntity(uuid))
          end
       end
       if patted then
-         callEvent(pattersGroupName, "whilePat", players)
+         callEvent(pattersGroupName, "whilePat", pattersGroup)
       end
    end
 end
