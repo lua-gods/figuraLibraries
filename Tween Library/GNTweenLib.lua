@@ -3,6 +3,7 @@
  / / __/  |/ /
 / /_/ / /|  /
 \____/_/ |_/ ]]
+modName = "gnrocks:tweenlib"
 --[[
 Disclaimer for Robert Penner's Easing Equations license:
 
