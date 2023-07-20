@@ -37,7 +37,7 @@ local playerEvents = { -- list of tables containing functions that get called wh
    },
 }
 
-local headEvents = { -- this table works like playerEvents table but instead of player its for player heads
+local headEvents = { -- this table works like playerEvents table but instead of player its for player heads and every event have extra argument that is position of player head
    onPat = {},
    onUnpat = {},
    togglePat = {},
@@ -58,22 +58,37 @@ end
 local myPatters = {player = {}, head = {}}
 
 function events.tick()
-   for pattersGroupName, pattersGroup in pairs(myPatters) do
-      local patted = false
-      local players = {}
-      for uuid, time in pairs(pattersGroup) do
+   local patted = false
+   for uuid, time in pairs(myPatters.player) do
+      if time <= 0 then
+         callEvent("player", "onUnpat")
+         callEvent("player", "togglePat", false)
+         myPatters.player[uuid] = nil
+      else
+         myPatters.player[uuid] = time - 1
+         patted = true
+      end
+   end
+   if patted then
+      callEvent("player", "whilePat", myPatters.player)
+   end
+   for i, headPatters in pairs(myPatters.head) do
+      patted = false
+      local pos = headPatters.pos
+      for uuid, time in pairs(headPatters.list) do
          if time <= 0 then
-            callEvent(pattersGroupName, "onUnpat")
-            callEvent(pattersGroupName, "togglePat", false)
-            pattersGroup[uuid] = nil
+            callEvent("head", "onUnpat", pos)
+            callEvent("head", "togglePat", false, pos)
+            headPatters.list[uuid] = nil
          else
-            pattersGroup[uuid] = time - 1
+            headPatters.list[uuid] = time - 1
             patted = true
-            table.insert(players, world.getEntity(uuid))
          end
       end
       if patted then
-         callEvent(pattersGroupName, "whilePat", players)
+         callEvent("head", "whilePat", headPatters.list, pos)
+      else
+         myPatters.head[i] = nil
       end
    end
 end
@@ -91,16 +106,27 @@ avatar:store("petpet", function(uuid, time)
    end
 end)
 
-avatar:store("petpet.playerHead", function(uuid, time)
-   time = math.min(time, 100)
-   if not myPatters.head[uuid] then
-      callEvent("head", "onPat")
-      callEvent("head", "togglePat", true)
+avatar:store("petpet.playerHead", function(uuid, time, x, y, z)
+   if not x or not y or not z then
+      return
    end
-   myPatters.head[uuid] = time
+   time = math.min(time or config.holdFor, 100)
+   local pos = vec(x, y, z)
+   local i = tostring(pos)
+   local patters = myPatters.head[i]
+   if not patters then
+      patters = {}
+      myPatters.head[i] = {list = patters, pos = pos}
+   end
+
+   if not patters[uuid] then
+      callEvent("head", "onPat", pos)
+      callEvent("head", "togglePat", true, pos)
+   end
+   patters[uuid] = time
    local entity = world.getEntity(uuid)
    if entity then
-      callEvent("head", "oncePat", entity)
+      callEvent("head", "oncePat", entity, pos)
    end
 end)
 
@@ -168,7 +194,7 @@ function pings.patpat(a, b, c)
          )
       end
 
-      pcall(blockAvatarVars["petpet.playerHead"], myUuid, config.holdFor)
+      pcall(blockAvatarVars["petpet.playerHead"], myUuid, config.holdFor, pos.x, pos.y, pos.z)
    else -- entity
       local entity = world.getEntity(unpackUuid(a))
 
@@ -266,7 +292,7 @@ local patting = false
 local patTime = 0
 local key = keybinds:newKeybind("patpat", config.patpatKey)
 
-key.press = function() if not host:getScreen() and not action_wheel:isEnabled() and player:isLoaded() then patting = true patPat() end end
+key.press = function() if not host:getScreen() and not action_wheel:isEnabled() and player:isLoaded() and player:getPose() == "CROUCHING" then patting = true patPat() end end
 key.release = function() patting = false patTime = 0 end
 
 function events.tick()
