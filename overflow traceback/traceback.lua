@@ -6,11 +6,10 @@ copy your autoScripts from avatar.json to config below or leave autoScripts empt
 set autoScripts in avatar.json to: ["traceback"]
 ]]-- config
 local autoScripts = {}
-local tracebackLimit = 50
+local tracebackLimit = 25
 
 -- code
 local myFileName = (...):gsub('.$', '%1.')..({...})[2]
-local codeToAddInRequire = 'require("'..myFileName..'")()'
 
 -- patch
 local function patch(text, codeToAdd)
@@ -80,6 +79,41 @@ local function check()
    end
 end
 
+-- load
+local checkVarName = 'check'
+for _ = 1, 8 do
+   checkVarName = checkVarName..math.random(0, 9)
+end
+
+local envCache = {}
+local envIds = {}
+local luaLoad = load
+function loadstring(code, name, env)
+   local patchedCode = patch(code, checkVarName..'();')
+
+   env = env or _ENV
+   local envId
+   if envIds[env] then
+      envId = envIds[env]
+   else
+      table.insert(envCache, env)
+      envIds[env] = #envCache
+      envId = #envCache
+   end
+
+   local codeToAdd = 'local '..checkVarName..' = require("'..myFileName..'")(); _ENV = require("'..myFileName..'")('..envId..');'
+
+   return luaLoad(
+      codeToAdd .. patchedCode,
+      name
+   )
+end
+load = loadstring
+
+local function getEnv(id)
+   return envCache[id] or check
+end
+
 -- require
 local scripts = avatar:getNBT().scripts
 
@@ -89,7 +123,7 @@ function require(file, fallbackFunction)
 
    file = file:gsub("/", ".")
    if file == myFileName then
-      return check
+      return getEnv
    end
 
    if not scriptsOutput[file] then
@@ -100,9 +134,7 @@ function require(file, fallbackFunction)
          table.insert(code, string.char(byte % 256))
       end
 
-      local patchedCode = patch(table.concat(code), codeToAddInRequire)
-
-      local func, err = load(patchedCode, file)
+      local func, err = load(table.concat(code), file)
       if func then
          local folderPath, fileName = file:match('^(.*)%.(.-)$')
          if not folderPath then
