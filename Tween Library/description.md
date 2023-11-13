@@ -9,7 +9,8 @@ GNTweenLib.tweenFunction(
    to : VectorN|number, -- numbers and vectors
    duration : number, -- in seconds
    ease : easeType, -- ease transition type, automatically annotated in VScode
-   func : function, -- gets called every frame when transitioning
+   tick : fun(transition : value, time : number), -- gets called every frame when transitioning
+   on_finish : function?, -- gets called every frame when transitioning
    unique_name : string?) -- optional value
 ```
 # Example Code
