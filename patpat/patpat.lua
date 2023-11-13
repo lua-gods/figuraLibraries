@@ -292,7 +292,7 @@ local patting = false
 local patTime = 0
 local key = keybinds:newKeybind("patpat", config.patpatKey)
 
-key.press = function() if not host:getScreen() and not action_wheel:isEnabled() and player:isLoaded() and player:getPose() == "CROUCHING" then patting = true patPat() end end
+key.press = function() if not host:getScreen() and not action_wheel:isEnabled() and player:isLoaded() and player:isSneaking() then patting = true patPat() end end
 key.release = function() patting = false patTime = 0 end
 
 function events.tick()
