@@ -36,7 +36,7 @@ function events.tick()
     else
         for _, v in pairs(config.useExtraAngle) do
             if v then
-                targetRot = 15
+                targetRot = config.extraAngle
                 break
             end
         end
