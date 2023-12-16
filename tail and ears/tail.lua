@@ -174,4 +174,4 @@ function events.render(delta)
     end
 end
 
-return config -- code by Auria <3
+return config, {rot = rot, oldRot = oldRot} -- code by Auria <3
