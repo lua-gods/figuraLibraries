@@ -39,15 +39,29 @@ readers = {
          buffer:close()
       end
    end,
-   base64 = function(responseData, outputTbl)
-      local output = readers.string(responseData, outputTbl)
-      if output then
+   base64 = function(responseData, output)
+      if not output.extra then output.extra = '' end
+      for _ = 1, 8 do
+         if responseData:available() < 1 then return end
+         local byte = responseData:read()
+         if byte < 0 then
+            local buffer = data:createBuffer()
+            buffer:writeByteArray(output.extra)
+            buffer:setPosition(0)
+            table.insert(output, buffer:readBase64())
+            buffer:close()
+            return table.concat(output)
+         end
+         output.extra = output.extra .. string.char(byte)
          local buffer = data:createBuffer()
-         buffer:writeByteArray(output)
+         buffer:writeByteArray(output.extra)
+         buffer:readFromStream(responseData, responseData:available())
          buffer:setPosition(0)
-         local base64 = buffer:readBase64()
+         local base64 = math.floor(buffer:getLength() / 12)
+         table.insert(output, buffer:readBase64():sub(1, base64 * 4))
+         buffer:setPosition(base64 * 3)
+         output.extra = buffer:readByteArray()
          buffer:close()
-         return base64
       end
    end,
    byteArray = function(responseData, output)
