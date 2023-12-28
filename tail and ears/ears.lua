@@ -32,7 +32,7 @@ function events.tick()
     -- set target rotation
     local targetRot = 0
     if player:getPose() == "CROUCHING" then
-        targetRot = 15
+        targetRot = config.extraAngle
     else
         for _, v in pairs(config.useExtraAngle) do
             if v then
