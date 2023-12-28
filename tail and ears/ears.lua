@@ -60,6 +60,7 @@ function events.tick()
     rot = rot + vel
     rot.x = rot.x + math.clamp(playerVel.z + playerRotVel.x, -14, 14)
     rot.z = rot.z + math.clamp(-playerVel.x, -6, 6)
+    rot.w = rot.w + math.clamp(playerVel.y * 0.25, -4, 4)
 end
 
 function events.render(delta)
