@@ -171,4 +171,4 @@ function tailConfig.getPartRot(partId, delta)
    return getPartRot(partId, delta, time, strength)
 end
 
-return tailConfig 
+return tailConfig -- made by Auria
