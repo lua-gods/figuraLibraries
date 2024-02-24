@@ -7,8 +7,8 @@ local requests = {}
 --- @param outputType allowedOutputTypes?
 --- @param headers table?
 function lib.get(uri, finish, outputType, headers)
-   if not net:isNetworkingAllowed(uri) then finish(nil, 'networkingNotAllowed') return end
-   if not net:isLinkAllowed(uri) then finish(nil, 'linkNotAllowed') return end
+   if not net:isNetworkingAllowed(uri) then finish(uri, 'networkingNotAllowed') return end
+   if not net:isLinkAllowed(uri) then finish(uri, 'linkNotAllowed') return end
    local request = net.http:request(uri)
    for i, v in pairs(headers or {}) do
       request:setHeader(i, v)
@@ -17,7 +17,8 @@ function lib.get(uri, finish, outputType, headers)
       future = request:send(),
       finish = finish,
       output = {},
-      outputType = outputType or 'string'
+      outputType = outputType or 'string',
+      uri = uri
    })
 end
 
@@ -84,12 +85,12 @@ function events.world_tick()
       if v.future then
          if v.future:isDone() then
             local response = v.future:getValue()
-            local code = response:getResponseCode()
+            local code = response and response:getResponseCode() or -1
             if code == 200 then
                v.responseData = response:getData()
                v.future = nil
             else
-               v.finish(nil, code)
+               v.finish(v.uri, code)
                requests[i] = nil
             end
          end
