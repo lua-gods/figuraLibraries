@@ -5,7 +5,7 @@ local config = {
 
    requireEmptyOffHand = false,
    patDelay = 3, -- delay between pats when holding patpat key in ticks
-   holdFor = 6, -- amount of ticks before patting stops, if this value is smaller than patDelay it might cause issues
+   holdFor = 20, -- amount of ticks before patting stops, if this value is smaller than patDelay it might cause issues
 
    patpatBlocks = { -- list of blocks that can be patted 
       "minecraft:player_head", "minecraft:player_wall_head"
@@ -131,12 +131,8 @@ avatar:store("petpet.playerHead", function(uuid, time, x, y, z)
 end)
 
 -- update config
-if config.noPats then
-   avatar:store("patpat.noPats", true)
-end
-if config.noHearts then
-   avatar:store("patpat.noHearts", true)
-end
+avatar:store("patpat.noPats", config.noPats or nil)
+avatar:store("patpat.noHearts", config.noHearts or nil)
 
 -- useful variables and functions
 local myUuid = avatar:getUUID()
@@ -155,9 +151,7 @@ local function unpackUuid(uuid)
    local newUuid = ""
    for i = 1, 16 do
       newUuid = newUuid..string.format("%02x", string.byte(uuid:sub(i, i)))
-      if uuidDashes[i] then
-         newUuid = newUuid.."-"
-      end
+      if uuidDashes[i] then newUuid = newUuid.."-" end
    end
    return newUuid
 end
@@ -177,12 +171,14 @@ end
 
 -- pings
 function pings.patpat(a, b, c)
-   if not player:isLoaded() then
-      return
-   end
+   if not player:isLoaded() then return end
    local particlePos
    if b then -- block
-      local pos = vec(a, b, c)
+      local receivedPos = vec(a, b, c)
+      local playerPos = player:getPos()
+      local offset = (receivedPos / 64):floor()
+      local pos = (playerPos / 64 + offset * 0.5):floor() * 64
+      pos = pos + receivedPos % 64 - 32 * offset
       local block = world.getBlockState(pos)
 
       local blockAvatarVars = getAvatarVarsFromBlock(block)
@@ -198,12 +194,8 @@ function pings.patpat(a, b, c)
    else -- entity
       local entity = world.getEntity(unpackUuid(a))
 
-      if not entity then
-         return
-      end
-      if entity:getType() == "minecraft:player" and entity:getVariable("patpat.noPats") then
-         return
-      end
+      if not entity then return end
+      if entity:getType() == "minecraft:player" and entity:getVariable("patpat.noPats") then return end
 
       local entityPos = entity:getPos()
       local boundingBox = entity:getBoundingBox()
@@ -222,9 +214,7 @@ function pings.patpat(a, b, c)
 end
 
 -- host only
-if not host:isHost() then
-   return eventsList
-end
+if not host:isHost() then return eventsList end
 
 -- update config
 for i, v in ipairs(config.patpatBlocks) do
@@ -237,18 +227,12 @@ end
 
 -- code
 local function patPat()
-   if player:getItem(1).id ~= "minecraft:air" then
-      return
-   end
-   if config.requireEmptyOffHand and player:getItem(2).id ~= "minecraft:air" then
-      return
-   end
+   if player:getItem(1).id ~= "minecraft:air" then return end
+   if config.requireEmptyOffHand and player:getItem(2).id ~= "minecraft:air" then return end
 
    local myPos = player:getPos():add(0, player:getEyeHeight(), 0)
    local eyeOffset = renderer:getEyeOffset()
-   if eyeOffset then
-      myPos = myPos + eyeOffset
-   end
+   if eyeOffset then myPos = myPos + eyeOffset end
 
    local block, blockPos = player:getTargetedBlock(true, 5)
    local dist = (myPos - blockPos):length()
@@ -263,20 +247,20 @@ local function patPat()
    end
 
    if targetType == "block" then
-      if not config.patpatBlocks[block.id] then
-         return
-      end
-
-      if getAvatarVarsFromBlock(block)["patpat.noPats"] then
-         return
-      end
-
-      pings.patpat(block:getPos():unpack())
+      if not config.patpatBlocks[block.id] then return end
+      if getAvatarVarsFromBlock(block)["patpat.noPats"] then return end
+      local blockPos = block:getPos()
+      local playerPos = player:getPos()
+      local playerOffset = vec(
+         math.abs(playerPos.x % 64 - 32) > 16 and 1 or 0,
+         math.abs(playerPos.y % 64 - 32) > 16 and 1 or 0,
+         math.abs(playerPos.z % 64 - 32) > 16 and 1 or 0
+      )
+      local finalPos = (blockPos + playerOffset * 32) % 64 + playerOffset * 64
+      pings.patpat(finalPos:unpack())
    else
       local entityType = entity:getType()
-      if config.disabledEntities[entityType] then
-         return
-      end
+      if config.disabledEntities[entityType] then return end
       if entityType == "minecraft:player" then
          if entity:getVariable("patpat.noPats") then
             return
@@ -296,12 +280,10 @@ key.press = function() if not host:getScreen() and not action_wheel:isEnabled() 
 key.release = function() patting = false patTime = 0 end
 
 function events.tick()
-   if not patting then
-      return
-   end
+   if not patting then return end
 
    patTime = patTime + 1
-   if patTime % 3 == 0 then
+   if patTime % config.patDelay == 0 then
       patPat()
    end
 end
