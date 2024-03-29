@@ -131,8 +131,8 @@ avatar:store("petpet.playerHead", function(uuid, time, x, y, z)
 end)
 
 -- update config
-avatar:store("patpat.noPats", config.noPats or nil)
-avatar:store("patpat.noHearts", config.noHearts or nil)
+if config.noPats then avatar:store("patpat.noPats", true) end
+if config.noHearts then avatar:store("patpat.noHearts", true) end
 
 -- useful variables and functions
 local myUuid = avatar:getUUID()
