@@ -84,7 +84,7 @@ function tail:setConfig(tbl)
    return self
 end
 
----set if tail should update, coudld be used for disabling tail when invisible, returns self for chaining
+---set if tail should update, could be used for disabling tail when invisible, returns self for chaining
 ---@param x boolean
 ---@return self
 function tail:setUpdate(x)
