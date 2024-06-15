@@ -34,3 +34,11 @@ function pings.tailWag(x)
    tail2.config.enableWag.keybind = x
    tail3.config.enableWag.keybind = x
 end
+
+-- ears
+local earsPhysics = require('ears')
+
+local ears = earsPhysics.new(models.example.Head.leftEar, models.example.Head.rightEar)
+ears:setConfig {
+  -- you can check ears.lua to see default config
+}
