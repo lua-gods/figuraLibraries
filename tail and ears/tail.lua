@@ -58,7 +58,8 @@ function tailPhysics.new(model)
          currentPart = currentPart[n .. i]
       end
    end
-   obj.tailY = obj.parts[1]:getPivot().y / 16
+   obj.model = obj.parts[1]
+   obj.tailY = obj.model:getPivot().y / 16
    -- rot
    obj.rot = {vec(0, 0, 0, 1)}
    obj.oldRot = {vec(0, 0, 0, 1)}
@@ -145,9 +146,9 @@ local function tickTail(tail, playerVelRaw, bodyVel, waterStrength, wagWalkSpeed
    tail.oldWagStrength = tail.wagStrength
    -- override
    for _, v in ipairs(tail.config.rotOverride) do
-      if v(v.rot) then
-         v.wagTime = v.wagTime * 0.8
-         v.wagStrength = v.wagStrength * 0.8
+      if v(tail.rot) then
+         tail.wagTime = tail.wagTime * 0.8
+         tail.wagStrength = tail.wagStrength * 0.8
          return
       end
    end
