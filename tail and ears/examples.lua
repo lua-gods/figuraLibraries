@@ -19,6 +19,7 @@ function pings.tailWag(x)
 end
 
 -- multiple tails example (tail2, tail3 not in example)
+--[[
 local tailPhysics = require('tail')
 
 local tail = tailPhysics.new(models.example.Body.tail)
@@ -34,7 +35,7 @@ function pings.tailWag(x)
    tail2.config.enableWag.keybind = x
    tail3.config.enableWag.keybind = x
 end
-
+--]]
 -- ears
 local earsPhysics = require('ears')
 
