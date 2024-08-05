@@ -21,7 +21,7 @@ local vec2Half = vec(0.5, 0.5)
 local myUuid = avatar:getUUID()
 
 -- check for head
-function myHead(bl)
+local function myHead(bl)
     local data = bl:getEntityData()
     return data and data.SkullOwner and data.SkullOwner.Id and client:intUUIDToString(table.unpack(data.SkullOwner.Id)) == myUuid
 end
