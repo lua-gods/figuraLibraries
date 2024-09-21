@@ -124,6 +124,7 @@ local function renderMesh(nbt, model)
    local modelPivot = model:getPivot()
    local meshData = nbt.mesh_data
 
+   local vertexIdType = #meshData.vtx > 32767 * 3 and 2 or #meshData.vtx > 255 * 3 and 1 or 0;
    local i = 1
    for _, tex in pairs(meshData.tex) do -- loop through textures first because it contains the amount of vertices used in face
       local textureId = bit32.rshift(tex, 4)
@@ -133,7 +134,13 @@ local function renderMesh(nbt, model)
       local uvs = {}
       for k = 0, vertexCount - 1 do
          local faceId = i + k
-         local vertexId = meshData.fac[faceId] * 3 + 1 -- lua starts from 1 remember
+         local vertexId = meshData.fac[faceId]
+         if vertexIdType == 0 then
+            vertexId = vertexId % 256
+         elseif vertexIdType == 1 then
+            vertexId = vertexId % 65536
+         end
+         vertexId = vertexId * 3 + 1 -- lua starts from 1 remember
          local pos = vec(meshData.vtx[vertexId], meshData.vtx[vertexId + 1], meshData.vtx[vertexId + 2])
          local uv = vec(meshData.uvs[faceId * 2 - 1], meshData.uvs[faceId * 2])
          table.insert(vertices, partToWorldMat:apply(pos - modelPivot))
