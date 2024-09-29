@@ -5,7 +5,7 @@ local config = {
 
    requireEmptyOffHand = false,
    patDelay = 3, -- delay between pats when holding patpat key in ticks
-   holdFor = 20, -- amount of ticks before patting stops, if this value is smaller than patDelay it might cause issues
+   holdFor = 10, -- amount of ticks before patting stops, if this value is smaller than patDelay it might cause issues
 
    patpatBlocks = { -- list of blocks that can be patted 
       "minecraft:player_head", "minecraft:player_wall_head"
@@ -16,6 +16,7 @@ local config = {
 
    noPats = false,
    noHearts = false,
+   -- boundingBox = vec(0.6, 1.7999, 0.6) -- custom bounding box 
 }
 
 -- events
@@ -44,6 +45,13 @@ local headEvents = { -- this table works like playerEvents table but instead of 
    whilePat = {},
    oncePat = {},
 }
+
+-- some useful variables
+if config.noPats then avatar:store("patpat.noPats", true) end
+if config.noHearts then avatar:store("patpat.noHearts", true) end
+if config.boundingBox then avatar:store("patpat.boundingBox", config.boundingBox) end
+local vector3Index = figuraMetatables.Vector3.__index
+local myUuid = avatar:getUUID()
 
 -- events handler
 local eventsList = {player = playerEvents, head = headEvents}
@@ -94,7 +102,7 @@ function events.tick()
 end
 
 avatar:store("petpet", function(uuid, time)
-   time = math.min(time or config.holdFor, 100)
+   time = math.clamp(time or 0, config.holdFor, 100)
    if not myPatters.player[uuid] then
       callEvent("player", "onPat")
       callEvent("player", "togglePat", true)
@@ -129,13 +137,6 @@ avatar:store("petpet.playerHead", function(uuid, time, x, y, z)
       callEvent("head", "oncePat", entity, pos)
    end
 end)
-
--- update config
-if config.noPats then avatar:store("patpat.noPats", true) end
-if config.noHearts then avatar:store("patpat.noHearts", true) end
-
--- useful variables and functions
-local myUuid = avatar:getUUID()
 
 local function packUuid(uuid)
    uuid = uuid:gsub("-", "")
@@ -172,45 +173,44 @@ end
 -- pings
 function pings.patpat(a, b, c)
    if not player:isLoaded() then return end
-   local particlePos
+   local avatarVars, pos, boundingBox
    if b then -- block
+      -- decrypt position
       local receivedPos = vec(a, b, c)
       local playerPos = player:getPos()
       local offset = (receivedPos / 64):floor()
-      local pos = (playerPos / 64 + offset * 0.5):floor() * 64
-      pos = pos + receivedPos % 64 - 32 * offset
-      local block = world.getBlockState(pos)
-
-      local blockAvatarVars = getAvatarVarsFromBlock(block)
-      if not blockAvatarVars["patpat.noHearts"] then
-         particlePos = pos + vec(
-            math.random() * 0.8 + 0.1,
-            math.random() * 0.8,
-            math.random() * 0.8 + 0.1
-         )
-      end
-
-      pcall(blockAvatarVars["petpet.playerHead"], myUuid, config.holdFor, pos.x, pos.y, pos.z)
+      local blockPos = (playerPos / 64 + offset * 0.5):floor() * 64
+      blockPos = blockPos + receivedPos % 64 - 32 * offset
+      local block = world.getBlockState(blockPos)
+      -- get vars
+      avatarVars = getAvatarVarsFromBlock(block)
+      -- set position for particles
+      pos = blockPos + vec(0.5, 0, 0.5)
+      boundingBox = vec(0.8, 0.8, 0.8)
+      -- call petpet function
+      pcall(avatarVars["petpet.playerHead"], myUuid, config.holdFor, pos.x, pos.y, pos.z)
    else -- entity
       local entity = world.getEntity(unpackUuid(a))
-
       if not entity then return end
-      if entity:getType() == "minecraft:player" and entity:getVariable("patpat.noPats") then return end
-
-      local entityPos = entity:getPos()
-      local boundingBox = entity:getBoundingBox()
-      particlePos = entityPos + vec(
-         (math.random() - 0.5) * boundingBox.x,
-         math.random() * boundingBox.y,
-         (math.random() - 0.5) * boundingBox.z
-      )
-
-      pcall(entity:getVariable("petpet"), myUuid, config.holdFor)
+      avatarVars = entity:getVariable()
+      -- get position and safely get patpat.boundingBox and fallback to normal boundingBox
+      pos = entity:getPos()
+      local success
+      success, boundingBox = pcall(vector3Index, avatarVars['patpat.boundingBox'], 'xyz')
+      if not success then
+         boundingBox = entity:getBoundingBox()
+      end
+      -- call petpet function
+      pcall(avatarVars["petpet"], myUuid, config.holdFor)
    end
-
-   if particlePos then
-      particles[config.patParticle]:pos(particlePos):size(1):spawn()
-   end
+   -- spawn particles
+   if avatarVars['patpat.noHearts'] then return end
+   pos = pos - boundingBox.x_z * 0.5 + vec(
+      math.random(),
+      math.random(),
+      math.random()
+   ) * boundingBox
+   particles[config.patParticle]:pos(pos):size(1):spawn()
 end
 
 -- host only
@@ -225,7 +225,6 @@ for i, v in ipairs(config.disabledEntities) do
    config.disabledEntities[v] = i
 end
 
--- code
 local function patPat()
    if player:getItem(1).id ~= "minecraft:air" then return end
    if config.requireEmptyOffHand and player:getItem(2).id ~= "minecraft:air" then return end
@@ -260,12 +259,9 @@ local function patPat()
       pings.patpat(finalPos:unpack())
    else
       local entityType = entity:getType()
+      if entity:hasContainer() then return end
       if config.disabledEntities[entityType] then return end
-      if entityType == "minecraft:player" then
-         if entity:getVariable("patpat.noPats") then
-            return
-         end
-      end
+      if entity:getVariable("patpat.noPats") then return end
 
       pings.patpat(packUuid(entity:getUUID()))
    end
