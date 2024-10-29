@@ -15,15 +15,17 @@ controller:setData(function(new, old)
 end)
 
 controller:setTree(
-   aurianims.blend(
-      function(data, old, anim1, anim2)
+   aurianims.mix(
+      function(data, old)
          return math.lerp(old, data.speed * 4, 0.4)
       end,
       modelAnims.idle,
-      aurianims.blend(
-         function(data, old)
-            local t = math.clamp((data.speed - 0.22) * 16, 0, 1)
-            return math.lerp(old, t, 0.4)
+      aurianims.mix(
+         function(data, old, anim1, anim2)
+            anim1:speed(math.min(data.speed * 8, 2.5))
+            anim2:speed(data.speed * 5)
+            local run = data.speed > 0.24 and (player:isOnGround() or data.speed < 0.35)
+            return math.lerp(old, run and 1 or 0, 0.4)
          end,
          modelAnims.walk,
          modelAnims.run

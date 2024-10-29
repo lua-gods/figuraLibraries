@@ -37,14 +37,14 @@ function animController:setTree(tree)
    return self
 end
 
----creates blend node
+---creates blend node, blend function return value controls what animation should be used 0 is 100% of anim1 and 0% of anim2, 1 is 0% of anim1 and 100% of anim2, values below 0 or above 1 will be clamped 
 ---@param func fun(data: table, old: number, anim1: aurianims.node|Animation, anim2: aurianims.node|Animation): blend: number, instant: boolean?
 ---@param anim1 aurianims.node|Animation
 ---@param anim2 aurianims.node|Animation
 ---@return aurianims.node
-function lib.blend(func, anim1, anim2)
+function lib.mix(func, anim1, anim2)
    return {
-      type = 'blend',
+      type = 'mix',
       func = func,
       anim1 = anim1,
       anim2 = anim2,
@@ -63,7 +63,7 @@ local function update(controller, node, blend)
 end
 
 nodesUpdate = {
-   blend = function(controller, node, blendMul)
+   mix = function(controller, node, blendMul)
       node.oldBLend = node.blend
       local blend, instant = node.func(controller.data, node.blend, node.anim1, node.anim2)
       blend = math.clamp(blend, 0, 1)
@@ -85,7 +85,7 @@ local function updateRender(delta, controller, node, blend)
 end
 
 nodesUpdateRender = {
-   blend = function(delta, controller, node, blendMul)
+   mix = function(delta, controller, node, blendMul)
       local blend = math.lerp(node.oldBLend, node.blend, delta)
       updateRender(delta, controller, node.anim1, blendMul * (1 - blend))
       updateRender(delta, controller, node.anim2, blendMul * blend)
