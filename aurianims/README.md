@@ -1,5 +1,5 @@
 # Aurianims
-Library to smoothly control multiple animations using recursion
+Library to smoothly control multiple animations
 
 ## Usage
 
