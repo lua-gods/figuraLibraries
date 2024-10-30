@@ -1,5 +1,5 @@
 # Aurianims
-Library to smoothly control multiple animations
+Library to smoothly control multiple amimations
 
 ## Usage
 
