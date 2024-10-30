@@ -1,4 +1,8 @@
 {
-   "name": "aurianims example",
-   "authors": ["Auriafoxgirl"]
+   "name": "Aurianims example",
+   "color": "#e27c21",
+   "badge_color_donator": "#e27c21",
+   "authors": [
+      "Auriafoxgirl"
+   ]
 }
