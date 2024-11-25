@@ -1,5 +1,5 @@
 -- Clothes Lib - By AuriaFoxGirl ^^
--- https://github.com/lua-gods/figurLibraries/tree/main/clothes/
+-- https://github.com/lua-gods/figuraLibraries/tree/main/clothes/
 ---@class auria.clothes
 local lib = {}
 ---@class auria.clothes.Handler
