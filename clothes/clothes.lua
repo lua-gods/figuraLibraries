@@ -11,6 +11,7 @@ local lib = {}
 ---@field outfitOverride {[any]: {[string]: Vector4}} -- if outfit exists in this table it will be used instead of selected clothes e.g. could be used to change outfit while in water, remember to update clothes after changing it
 local clothesHandler = {}
 clothesHandler.__index = clothesHandler
+local emptyVec3 = vec(0, 0, 0)
 
 ---@overload fun(tbl: table): table
 local function copyOutfit(tbl)
@@ -77,17 +78,12 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
    for i, groupsInfo in pairs(modelpartsData) do
       local modelparts = modelpartsList[i]
       for _, model in pairs(modelparts) do
-         local positions = {}
+         local expandDirs = {}
          for _, vertexGroup in pairs(model:getAllVertices()) do
             for _, vertex in pairs(vertexGroup) do
                local p = vertex:getPos()
                local id = tostring(p)
-               local t = positions[id]
-               if t then
-                  t[2] = t[2] + vertex:getNormal()
-               else
-                  positions[id] = {p, vertex:getNormal()}
-               end
+               expandDirs[id] = (expandDirs[id] or emptyVec3) + vertex:getNormal()
             end
          end
          local modelsGroup = model:newPart('clothes_'..model:getName()):remove()
@@ -101,8 +97,8 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
             local dist = group.distance
             for _, vertexGroup in pairs(newModel:getAllVertices()) do
                for _, vertex in pairs(vertexGroup) do
-                  local pos = positions[tostring(vertex:getPos())]
-                  vertex:setPos(pos[1] + pos[2] * dist)
+                  local pos = vertex:getPos()
+                  vertex:setPos(pos + expandDirs[tostring(vertex:getPos())] * dist)
                end
             end
          end
