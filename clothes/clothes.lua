@@ -81,8 +81,7 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
          local expandDirs = {}
          for _, vertexGroup in pairs(model:getAllVertices()) do
             for _, vertex in pairs(vertexGroup) do
-               local p = vertex:getPos()
-               local id = tostring(p)
+               local id = tostring(vertex:getPos())
                expandDirs[id] = (expandDirs[id] or emptyVec3) + vertex:getNormal()
             end
          end
@@ -106,7 +105,7 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
       end
    end
    -- update
-   if configName then
+   if configName or defaultOutfit then
       obj:update()
    end
    -- return
