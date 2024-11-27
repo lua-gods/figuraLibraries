@@ -1,7 +1,8 @@
 local earsPhysics = {} -- made by Auriafoxgirl
 ---@class auria.earsPhysics
 ---@field config table
----@field model ModelPart
+---@field leftEar ModelPart
+---@field rightEar ModelPart
 local ears = {}
 local updatingEars = {}
 ears.__index = ears
@@ -13,10 +14,23 @@ local oldPlayerRot
 function earsPhysics.new(leftEar, rightEar)
    local obj = setmetatable({}, ears)
    obj.config = { -- default config
-      velocityStrength = 1, -- velocity strength
+      velocityStrength = 1, -- velocity strength, can also be Vector3
+      headRotStrength = 0.4, -- how much ears should rotate when head moved up or down
+
+      bounce = 0.2, -- how bouncy ears are
+      stiff = 0.3, -- how stiff ears are
+   
       extraAngle = 15, -- rotates ears by this angle when crouching
       useExtraAngle = {}, -- if any of variables in this table is true extraAngle will be used even when not crouching
       addAngle = {}, -- adds angle to ear rotation
+
+      earsFlick = true, -- set if ears should flick
+      flickChance = 400, -- chance of ear flick per tick
+      flickDelay = 40, -- minimum delay between ear flicks
+      flickStrength = 30, -- how much ears should flick
+
+      rotMin = vec(-12, -8, -4), -- rotation limit
+      rotMax = vec(12, 8, 6), -- rotation limit
    }
    -- model
    obj.leftEar = leftEar
@@ -27,6 +41,7 @@ function earsPhysics.new(leftEar, rightEar)
    obj.rot = vec(0, 0, 0, 0)
    obj.oldRot = obj.rot
    obj.vel = vec(0, 0, 0, 0)
+   obj.flickTime = 0
    -- finish
    updatingEars[obj] = obj
    return obj
@@ -47,6 +62,10 @@ end
 ---@return self
 function ears:setUpdate(x)
    updatingEars[self] = x and self or nil
+   if not x then
+      self.leftEar:setOffsetRot()
+      self.rightEar:setOffsetRot()
+   end
    return self
 end
 
@@ -55,33 +74,55 @@ function ears:remove()
    updatingEars[self] = nil
 end
 
-local function tickEars(ears, playerVel, playerRotVel, isCrouching)
+local function tickEars(obj, playerVel, playerRotVel, isCrouching, playerRot)
    -- set oldRot
-   ears.oldRot = ears.rot
+   obj.oldRot = obj.rot
    -- set target rotation
-   local targetRot = 0
+   local targetRotZW = 0
    if isCrouching then
-      targetRot = ears.config.extraAngle
+      targetRotZW = obj.config.extraAngle
    else
-      for _, v in pairs(ears.config.useExtraAngle) do
+      for _, v in pairs(obj.config.useExtraAngle) do
          if v then
-            targetRot = ears.config.extraAngle
+            targetRotZW = obj.config.extraAngle
             break
          end
       end
    end
-   for _, v in pairs(ears.config.addAngle) do
-      targetRot = targetRot + v
+   for _, v in pairs(obj.config.addAngle) do
+      targetRotZW = targetRotZW + v
    end
+   local targetRot = vec(
+      obj.config.headRotStrength * -playerRot.x,
+      0,
+      targetRotZW,
+      -targetRotZW
+   )
    -- player velocity
-   playerVel = playerVel * ears.config.velocityStrength * 40
-   playerRotVel = playerRotVel * ears.config.velocityStrength
+   playerVel = playerVel * obj.config.velocityStrength * 60
+   playerRotVel = playerRotVel * obj.config.velocityStrength
+   local finalVel = vec(
+      math.clamp(playerVel.z + playerRotVel.x, obj.config.rotMin.x, obj.config.rotMax.x),
+      math.clamp(playerVel.x, obj.config.rotMin.y, obj.config.rotMax.y),
+      math.clamp(playerVel.y * 0.25, obj.config.rotMin.z, obj.config.rotMax.z)
+   )
    -- update velocity and rotation
-   ears.vel = ears.vel * 0.6 + (vec(0, 0, 0, targetRot) - ears.rot) * 0.2
-   ears.rot = ears.rot + ears.vel
-   ears.rot.x = ears.rot.x + math.clamp(playerVel.z + playerRotVel.x, -14, 14)
-   ears.rot.z = ears.rot.z + math.clamp(-playerVel.x, -6, 6)
-   ears.rot.w = ears.rot.w + math.clamp(playerVel.y * 0.25, -4, 4)
+   obj.vel = obj.vel * (1 - obj.config.stiff) + (targetRot - obj.rot) * obj.config.bounce
+   obj.rot = obj.rot + obj.vel
+   obj.rot.x = obj.rot.x + finalVel.x
+   obj.rot.z = obj.rot.z - finalVel.y + finalVel.z
+   obj.rot.w = obj.rot.w - finalVel.y - finalVel.z
+   -- ears flick
+   obj.flickTime = math.max(obj.flickTime - 1, 0)
+   obj.flickTime = math.max(obj.flickTime - 1, 0)
+   if obj.config.earsFlick and obj.flickTime == 0 and math.random(math.max(obj.config.flickChance, 1)) == 1 then
+      obj.flickTime = obj.config.flickDelay
+      if math.random() > 0.5 then
+         obj.vel.z = obj.vel.z + obj.config.flickStrength
+      else
+         obj.vel.w = obj.vel.w - obj.config.flickStrength
+      end
+   end
 end
 
 function events.tick()
@@ -98,16 +139,16 @@ function events.tick()
    playerVel = vectors.rotateAroundAxis(-playerRot.x, playerVel, vec(1, 0, 0))
    local isCrouching = player:getPose() == "CROUCHING"
    -- update ears
-   for _, ears in pairs(updatingEars) do
-      tickEars(ears, playerVel, playerRotVel, isCrouching)
+   for _, obj in pairs(updatingEars) do
+      tickEars(obj, playerVel, playerRotVel, isCrouching, playerRot)
    end
 end
 
 function events.render(delta)
-   for _, ears in pairs(updatingEars) do
-      local currentRot = math.lerp(ears.oldRot, ears.rot, delta)
-      ears.leftEar:setRot(ears.defaultLeftEarRot + currentRot.xyz + currentRot.__w)
-      ears.rightEar:setRot(ears.defaultRightEarRot + currentRot.x_z - currentRot._yw)
+   for _, obj in pairs(updatingEars) do
+      local rot = math.lerp(obj.oldRot, obj.rot, delta)
+      obj.leftEar:setOffsetRot(rot.xyz) ---@diagnostic disable-line: undefined-field
+      obj.rightEar:setOffsetRot(rot.xyw) ---@diagnostic disable-line: undefined-field
    end
 end
 
