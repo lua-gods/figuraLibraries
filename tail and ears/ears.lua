@@ -60,15 +60,16 @@ end
 ---@return self
 function ears:setUpdate(x)
    updatingEars[self] = x and self or nil
-   if not x then
-      self.leftEar:setOffsetRot()
-      self.rightEar:setOffsetRot()
-   end
    return self
 end
 
 ---remove ears physics from ears
-function ears:remove()
+---@param keepRot? boolean
+function ears:remove(keepRot)
+   if not keepRot then
+      self.leftEar:setOffsetRot()
+      self.rightEar:setOffsetRot()
+   end
    updatingEars[self] = nil
 end
 
