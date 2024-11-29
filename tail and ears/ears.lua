@@ -35,8 +35,6 @@ function earsPhysics.new(leftEar, rightEar)
    -- model
    obj.leftEar = leftEar
    obj.rightEar = rightEar
-   obj.defaultLeftEarRot = leftEar:getRot()
-   obj.defaultRightEarRot = rightEar:getRot()
    -- other
    obj.rot = vec(0, 0, 0, 0)
    obj.oldRot = obj.rot
