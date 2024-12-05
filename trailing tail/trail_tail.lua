@@ -7,7 +7,7 @@ local tails = {} ---@type auria.trail_tail[]
 ---@field distances number[]
 ---@field sizes Vector3[]|number[]
 ---@field vels Vector3[]
----@field config {stiff: number, bounce: number, gravity: Vector3, maxDist: number}
+---@field config {stiff: number, bounce: number, gravity: Vector3, maxDist: number, maxAngle: number}
 local trailingTail = {}
 
 -- variables for optimziation
@@ -26,15 +26,16 @@ function lib.new(model)
       stiff = 0.4,
       gravity = vec(0, -0.05, 0),
       -- gravity = vec(0, 0, 0),
-      maxDist = 1.25
+      maxDist = 1.1,
+      maxAngle = 20
    }
    tail.points = {}
    tail.distances = {}
    tail.sizes = {}
-   for _ = 1, 32 do
+   for _ = 1, 16 do
       table.insert(tail.points, vec(0, 0, 0))
       table.insert(tail.distances, 0.2)
-      table.insert(tail.sizes, 0.4)
+      table.insert(tail.sizes, 0.2)
    end
    tail.vels = {}
    tail.points[0] = vec(0, 0, 0)
@@ -109,8 +110,12 @@ local function tickTail(tail)
    local startWorldMat = tail.start:partToWorldMatrix()
    if startWorldMat.v11 == startWorldMat.v11 then -- check if not NaN
       tail.points[0] = startWorldMat:apply()
+      tail.oldDir = startWorldMat:applyDir(0, 0, 1):normalize()
    end
+
    log = {}
+
+   local oldDir = tail.oldDir
    for i, pos in ipairs(tail.points) do
       local previous = tail.points[i - 1]
       local dist = tail.distances[i]
@@ -119,6 +124,15 @@ local function tickTail(tail)
       local offset = pos - previous
       local offsetLength = offset:length()
       local dir = offsetLength > 0.01 and offset / offsetLength or vec(0, 0, 1) -- prevent normalized vector being length 0 when its vec(0, 0, 0)
+      local angle = math.deg(math.acos(dir:dot(oldDir)))
+      local maxAngle = tail.config.maxAngle
+      if angle > maxAngle then -- clamp angle
+         local rotAxis = oldDir:crossed(dir)
+         if rotAxis:lengthSquared() > 0.1 then
+            dir = vectors.rotateAroundAxis(math.min(angle, maxAngle) - angle, dir, rotAxis):normalize()
+         end
+      end
+      
       local targetPos = previous + dir * dist
 
       pos = targetPos + (pos - targetPos):clamped(0, dist * tail.config.maxDist)
@@ -143,6 +157,8 @@ local function tickTail(tail)
       -- tail.points[i] = pos
       
       tail.points[i] = movePointWithCollision(pos, newPos, tail.sizes[i])
+
+      oldDir = dir
    end
 
    m:text(table.concat(log, '\n'))
@@ -161,9 +177,9 @@ local function renderTail(tail, delta)
          lines[i] = {
             [-1] = lineLib:new(),
             lineLib:new():setWidth(0.08):setDepth(-0.05),
-            lineLib:new():setWidth(0.02):setDepth(-0.25),
-            lineLib:new():setWidth(0.02):setDepth(-0.5),
-            lineLib:new():setWidth(0.02):setDepth(-0.8),
+            lineLib:new():setWidth(0.01):setDepth(-0.25),
+            lineLib:new():setWidth(0.01):setDepth(-0.5),
+            lineLib:new():setWidth(0.01):setDepth(-0.8),
          }
       end
       local distOffset = (pos - oldPos):length()
