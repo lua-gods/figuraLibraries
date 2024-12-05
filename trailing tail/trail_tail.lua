@@ -7,6 +7,7 @@ local tails = {} ---@type auria.trail_tail[]
 ---@field distances number[]
 ---@field sizes Vector3[]|number[]
 ---@field vels Vector3[]
+---@field oldDir Vector3
 ---@field config {stiff: number, bounce: number, gravity: Vector3, maxDist: number, maxAngle: number}
 local trailingTail = {}
 
@@ -40,6 +41,7 @@ function lib.new(model)
    tail.vels = {}
    tail.points[0] = vec(0, 0, 0)
    tail.oldPoints = {}
+   tail.oldDir = vec(0, 0, 1)
    for i in pairs(tail.points) do
       tail.vels[i] = vec(0, 0, 0)
       tail.oldPoints[i] = tail.points
