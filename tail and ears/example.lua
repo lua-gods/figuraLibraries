@@ -5,8 +5,9 @@ local tail = tailPhysics.new(models.example.Body.tail)
 
 -- changing config default config is in tail.lua (optional)
 tail:setConfig {
-   idleSpeed = vec(0.025, 0.05, 0), -- how fast should tail move when nothing is happening
-   idleStrength = vec(1, 3, 0), -- how much should tail move
+   idleSpeed = vec(0.025, 0.1, 0), -- how fast should tail move when nothing is happening
+   idleStrength = vec(1, 4, 0), -- how much should tail move
+   rotVelocityStrength = 1,
 }
 
 -- tail wag when pressing keybind (optional)

@@ -2,6 +2,10 @@ local tailPhysics = {} -- made by Auriafoxgirl
 ---@class auria.tailPhysics
 ---@field config table
 ---@field model ModelPart
+---@field wagTime Vector3
+---@field oldWagTime Vector3
+---@field wagStrength Vector3
+---@field oldWagStrength Vector3
 local tail = {}
 local updatingTails = {}
 tail.__index = tail
@@ -125,63 +129,63 @@ local function getUnderwaterlevel(pos)
    return y
 end
 
-local function tickTail(tail, playerVelRaw, bodyVel, waterStrength, wagWalkSpeed)
+local function tickTail(obj, playerVelRaw, bodyVel, waterStrength, baseWagWalkSpeed)
    -- update tail delay if changed
-   if tail.tailDelay ~= tail.config.tailDelay then
-      tail.tailDelay = tail.config.tailDelay
-      tail.rot = {}
-      tail.oldRot = {}
-      for i = 1, tail.tailDelay do
-         tail.rot[i], tail.oldRot[i] = vec(0, 0, 0, 1), vec(0, 0, 0, 1)
+   if obj.tailDelay ~= obj.config.tailDelay then
+      obj.tailDelay = obj.config.tailDelay
+      obj.rot = {}
+      obj.oldRot = {}
+      for i = 1, obj.tailDelay do
+         obj.rot[i], obj.oldRot[i] = vec(0, 0, 0, 1), vec(0, 0, 0, 1)
       end
    end
    -- update rot
-   tail.rot[0] = tail.rot[1]
-   for i = tail.tailDelay, 1, -1 do
-      tail.oldRot[i] = tail.rot[i]
-      tail.rot[i] = tail.rot[i - 1]:copy()
+   obj.rot[0] = obj.rot[1]
+   for i = obj.tailDelay, 1, -1 do
+      obj.oldRot[i] = obj.rot[i]
+      obj.rot[i] = obj.rot[i - 1]:copy()
    end
    -- update variables
-   tail.oldWagTime = tail.wagTime
-   tail.oldWagStrength = tail.wagStrength
+   obj.oldWagTime = obj.wagTime
+   obj.oldWagStrength = obj.wagStrength
    -- override
-   for _, v in ipairs(tail.config.rotOverride) do
-      if v(tail.rot) then
-         tail.wagTime = tail.wagTime * 0.8
-         tail.wagStrength = tail.wagStrength * 0.8
+   for _, v in ipairs(obj.config.rotOverride) do
+      if v(obj.rot) then
+         obj.wagTime = obj.wagTime * 0.8
+         obj.wagStrength = obj.wagStrength * 0.8
          return
       end
    end
    -- get velocity
-   bodyVel = math.clamp(bodyVel * tail.config.rotVelocityStrength * 0.2, -tail.config.rotVelocityLimit, tail.config.rotVelocityLimit)
-   local wagWalkSpeed = tail.config.walkLimit == 0 and 0 or math.clamp(playerVelRaw.z * tail.config.velocityStrength.z / tail.config.walkLimit * wagWalkSpeed, 0, 1)
-   local playerVel = playerVelRaw * tail.config.velocityStrength
+   bodyVel = math.clamp(bodyVel * obj.config.rotVelocityStrength * 0.2, -obj.config.rotVelocityLimit, obj.config.rotVelocityLimit)
+   local wagWalkSpeed = obj.config.walkLimit == 0 and 0 or math.clamp(playerVelRaw.z * obj.config.velocityStrength.z / obj.config.walkLimit * baseWagWalkSpeed, 0, 1)
+   local playerVel = playerVelRaw * obj.config.velocityStrength
    -- water level
-   local tailPos = player:getPos():add(0, tail.tailY, 0)
+   local tailPos = player:getPos():add(0, obj.tailY, 0)
    local waterLevel = getUnderwaterlevel(tailPos)
-   local inWater = math.clamp(waterLevel + 0.5, 0, 1) * tail.config.waterStrength * waterStrength
+   local inWater = math.clamp(waterLevel + 0.5, 0, 1) * obj.config.waterStrength * waterStrength
    -- apply velocity
-   tail.vel = tail.vel * (1 - math.lerp(tail.config.stiff, tail.config.waterStiff, inWater))
-   tail.vel = tail.vel + (vec(0, 0, 0, 1) - tail.rot[1]) * tail.config.bounce
-   tail.rot[1] = tail.rot[1] + tail.vel
+   obj.vel = obj.vel * (1 - math.lerp(obj.config.stiff, obj.config.waterStiff, inWater))
+   obj.vel = obj.vel + (vec(0, 0, 0, 1) - obj.rot[1]) * obj.config.bounce
+   obj.rot[1] = obj.rot[1] + obj.vel
 
-   tail.rot[1].x = tail.rot[1].x + math.clamp(playerVel.y * 5 - inWater * 4, tail.config.verticalVelocityMin, tail.config.verticalVelocityMax)
-   tail.rot[1].y = tail.rot[1].y + bodyVel * math.max(1 - math.abs(playerVelRaw.x) * 4, 0) + math.clamp(playerVel.x * 20, -2, 2)
-   tail.rot[1].w = tail.rot[1].w * math.clamp(1 - playerVel.z - math.abs(bodyVel) * 0.02 + playerVel.y * 0.25 - inWater * 0.25, 0, 1)
+   obj.rot[1].x = obj.rot[1].x + math.clamp(playerVel.y * 5 - inWater * 4, obj.config.verticalVelocityMin, obj.config.verticalVelocityMax)
+   obj.rot[1].y = obj.rot[1].y + bodyVel * math.max(1 - math.abs(playerVelRaw.x) * 4, 0) + math.clamp(playerVel.x * 20, -2, 2)
+   obj.rot[1].w = obj.rot[1].w * math.clamp(1 - playerVel.z - math.abs(bodyVel) * 0.02 + playerVel.y * 0.25 - inWater * 0.25, 0, 1)
 
    -- wag
-   local targetWagSpeed = math.lerp(tail.config.idleSpeed, tail.config.walkSpeed, wagWalkSpeed)
-   local targetWagStrength = math.lerp(tail.config.idleStrength, tail.config.walkStrength, wagWalkSpeed)
-   for _, v in pairs(tail.config.enableWag) do
+   local targetWagSpeed = math.lerp(obj.config.idleSpeed, obj.config.walkSpeed, wagWalkSpeed)
+   local targetWagStrength = math.lerp(obj.config.idleStrength, obj.config.walkStrength, wagWalkSpeed)
+   for _, v in pairs(obj.config.enableWag) do
       if v then
-         targetWagSpeed = tail.config.wagSpeed
-         targetWagStrength = tail.config.wagStrength
+         targetWagSpeed = obj.config.wagSpeed
+         targetWagStrength = obj.config.wagStrength
          break
       end
    end
-   tail.wagSpeed = math.lerp(tail.wagSpeed, targetWagSpeed, 0.15)
-   tail.wagStrength = math.lerp(tail.wagStrength, targetWagStrength, 0.15)
-   tail.wagTime = tail.wagTime + tail.wagSpeed * (1 - inWater * 0.25)
+   obj.wagSpeed = math.lerp(obj.wagSpeed, targetWagSpeed, 0.15)
+   obj.wagStrength = math.lerp(obj.wagStrength, targetWagStrength, 0.15)
+   obj.wagTime = obj.wagTime + obj.wagSpeed * (1 - inWater * 0.25)
 end
 
 function events.tick()
@@ -209,17 +213,17 @@ function events.tick()
    end
    playerVelRaw = vectors.rotateAroundAxis(bodyPitch, playerVelRaw, vec(1, 0, 0))
    -- update all tails
-   for _, tail in pairs(updatingTails) do
-      tickTail(tail, playerVelRaw, bodyVel, waterStrength, wagWalkSpeed)
+   for _, tailObj in pairs(updatingTails) do
+      tickTail(tailObj, playerVelRaw, bodyVel, waterStrength, wagWalkSpeed)
    end
 end
 
 function events.render(delta)
-   for _, tail in pairs(updatingTails) do
-      local time = math.lerp(tail.oldWagTime, tail.wagTime, delta)
-      local strength = math.lerp(tail.oldWagStrength, tail.wagStrength, delta)
-      for i, v in pairs(tail.parts) do
-         v:setRot(getPartRot(tail, i, delta, time, strength))
+   for _, tailObj in pairs(updatingTails) do
+      local time = math.lerp(tailObj.oldWagTime, tailObj.wagTime, delta)
+      local strength = math.lerp(tailObj.oldWagStrength, tailObj.wagStrength, delta)
+      for i, v in pairs(tailObj.parts) do
+         v:setRot(getPartRot(tailObj, i, delta, time, strength))
       end
    end
 end
