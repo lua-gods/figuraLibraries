@@ -46,21 +46,21 @@ function lib.new(modelList)
       -- table.insert(tail.distances, 0.2)
       -- table.insert(tail.sizes, 0.2)
    -- end
-   local oldPivot = modelList[1]:getPivot()
-   tail.start = modelList[1]:getParent():newPart('trail_tail_point'):pivot(oldPivot):rot(modelList[1]:getRot())
-   for i = 2, #modelList do
-      local pivot = modelList[i]:getPivot()
-      tail.distances[i - 1] = (pivot - oldPivot):length() / 16
-      tail.sizes[i - 1] = 0.2
-      oldPivot = pivot
-      modelList[i]:moveTo(worldModel)
-      -- model[i].preRender = function(delta, context, part)
-      --    part:setPos(
-      --       math.lerp(tail.oldPoints[i - 1], tail.points[i - 1], delta) * 16 - pivot
-      --    )
-      -- end
-   end
-   modelList[1]:moveTo(worldModel)
+   -- local oldPivot = modelList[1]:getPivot()
+   -- tail.start = modelList[1]:getParent():newPart('trail_tail_point'):pivot(oldPivot):rot(modelList[1]:getRot())
+   -- for i = 2, #modelList do
+   --    local pivot = modelList[i]:getPivot()
+   --    tail.distances[i - 1] = (pivot - oldPivot):length() / 16
+   --    tail.sizes[i - 1] = 0.2
+   --    oldPivot = pivot
+   --    modelList[i]:moveTo(worldModel)
+   --    -- model[i].preRender = function(delta, context, part)
+   --    --    part:setPos(
+   --    --       math.lerp(tail.oldPoints[i - 1], tail.points[i - 1], delta) * 16 - pivot
+   --    --    )
+   --    -- end
+   -- end
+   -- modelList[1]:moveTo(worldModel)
    table.insert(tail.distances, 0.1)
    table.insert(tail.sizes, 0)
 
