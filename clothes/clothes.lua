@@ -31,7 +31,6 @@ end
 ---@param configName? string -- if provided the clothes will be stored in config with this name
 ---@return auria.clothes.Handler
 function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, configName)
-   ---@type auria.clothes.Handler
    local obj = {
       name = name,
       groups = groups,
@@ -97,7 +96,7 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
             for _, vertexGroup in pairs(newModel:getAllVertices()) do
                for _, vertex in pairs(vertexGroup) do
                   local pos = vertex:getPos()
-                  vertex:setPos(pos + expandDirs[tostring(vertex:getPos())] * dist)
+                  vertex:setPos(pos + expandDirs[tostring(pos)] * dist)
                end
             end
          end
