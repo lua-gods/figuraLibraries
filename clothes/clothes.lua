@@ -25,8 +25,8 @@ end
 ---creates new clothes handler
 ---@param name string -- used in pings
 ---@param textureSize Vector2
----@param modelpartsList {[string]: ModelPart[]} -- all modelparts need to be cube or mesh
----@param groups {title: string, texture: Texture, models: string[], distance: number, modelparts: ModelPart[]}[]
+---@param modelpartsList {[string]: ModelPart[]|{[number]: ModelPart, uvSize: Vector2}} -- modelparts used for clothes layers should be cube or mesh
+---@param groups {title: string, texture?: Texture, models: string[], distance: number, modelparts: ModelPart[], enableModels?: {[number]: {[1]: ModelPart, [2]: Vector2}}}[]
 ---@param defaultOutfit? {[string]: Vector4}
 ---@param configName? string -- if provided the clothes will be stored in config with this name
 ---@return auria.clothes.Handler
@@ -37,10 +37,11 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
       textureSize = textureSize,
       configName = configName,
       outfitOverride = {},
+      toggableModels = {},
       renderedClothes = '',
       current = nil,
       currentCompressed = nil,
-      ping = nil
+      ping = nil,
    }
    setmetatable(obj, clothesHandler)
    if configName then
@@ -63,20 +64,26 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
    local modelpartsData = {}
    for i, group in pairs(groups) do
       group.modelparts = {}
-      group.textureSize = group.texture:getDimensions() 
+      group.textureSize = group.texture and group.texture:getDimensions() or vec(16, 16) 
       group.clothesLimitX = group.textureSize.x / textureSize.x
       group.uvScale = (textureSize / group.textureSize):augmented()
-      for _, v in pairs(group.models) do
+      for _, v in pairs(group.models or {}) do
          if not modelpartsData[v] then
             modelpartsData[v] = {}
          end
          table.insert(modelpartsData[v], i)
       end
+      if group.enableModels then
+         for _, modelData in pairs(group.enableModels) do
+            local model = modelData[1]
+            obj.toggableModels[model] = modelpartsList[model]
+         end
+      end
    end
    -- generate modelparts
    for i, groupsInfo in pairs(modelpartsData) do
       local modelparts = modelpartsList[i]
-      for _, model in pairs(modelparts) do
+      for _, model in ipairs(modelparts) do
          local expandDirs = {}
          for _, vertexGroup in pairs(model:getAllVertices()) do
             for _, vertex in pairs(vertexGroup) do
@@ -117,7 +124,15 @@ end
 function clothesHandler:update(ignoreChangeFunc)
    local outfit = self.current
    outfit = select(2, next(self.outfitOverride)) or outfit
-
+   -- reset toggable models
+   local toggableModelsPriority = {}
+   for name, modelparts in pairs(self.toggableModels) do
+      toggableModelsPriority[name] = -1
+      for _, model in ipairs(modelparts) do
+         model:visible(false)
+      end
+   end
+   -- update layers
    for _, group in pairs(self.groups) do
       local current = outfit[group.title] or vec(0, 1, 1, 1)
       local id = current.x - 1
@@ -137,8 +152,22 @@ function clothesHandler:update(ignoreChangeFunc)
                :uvMatrix(uv)
          end
       end
+      local toggableModels = group.enableModels and group.enableModels[id + 1]
+      if toggableModels then
+         local name = toggableModels[1]
+         if toggableModelsPriority[name] < group.distance then
+            toggableModelsPriority[name] = group.distance
+            local modelparts = self.toggableModels[name]
+            local modelUv = toggableModels[2] * modelparts.uvSize
+            for _, model in ipairs(modelparts) do
+               model:visible(true)
+                  :color(color)
+                  :uvPixels(modelUv)
+            end
+         end
+      end
    end
-
+   -- update outfit data
    local newRenderedClothes = self:compressOutfit(outfit)
    if self.renderedClothes ~= newRenderedClothes then
       self.renderedClothes = newRenderedClothes
