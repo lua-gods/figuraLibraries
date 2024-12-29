@@ -1,3 +1,5 @@
+-- PixelLines - By AuriaFoxGirl ^^
+-- https://github.com/lua-gods/figuraLibraries/tree/main/pixelLines/
 local gridRes = 64
 
 local lineWorld = models:newPart('pixelLineWorld', 'World')
