@@ -97,6 +97,7 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
             local newModel = model:copy('')
                :visible(false)
                :setPrimaryTexture('CUSTOM', group.texture)
+               :setSecondaryRenderType('NONE')
             table.insert(group.modelparts, newModel)
             modelsGroup:addChild(newModel)
             local dist = group.distance
