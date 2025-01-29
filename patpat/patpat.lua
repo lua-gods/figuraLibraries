@@ -7,7 +7,7 @@ local config = {
    patDelay = 3, -- delay between pats when holding patpat key in ticks
    holdFor = 10, -- amount of ticks before patting stops, if this value is smaller than patDelay it might cause issues
 
-   patpatBlocks = { -- list of blocks that can be patted 
+   patpatBlocks = { -- list of blocks that can be patted
       "minecraft:player_head", "minecraft:player_wall_head"
    },
    disabledEntities = { -- list of entites that will be ignored when trying to pat them
@@ -16,26 +16,29 @@ local config = {
 
    noPats = false,
    noHearts = false,
-   -- boundingBox = vec(0.6, 1.7999, 0.6) -- custom bounding box 
+   -- boundingBox = vec(0.6, 1.7999, 0.6) -- custom bounding box
 }
 
 -- events
 local playerEvents = { -- list of tables containing functions that get called when specific thing happens
    onPat = { -- runs when you start being petted
-      function() end
+      --function() end
    },
    onUnpat = { -- runs when you stop being petted
-      function() end
+      --function() end
    },
    togglePat = { -- runs when you start or stop being petted, isPetted - boolean that is true when someone starts
-      function(isPetted) end
+      --function(isPetted) end
    },
-   whilePat = { -- runs every tick while being patted, patters - list of people patting you 
-      function(patters) end
+   whilePat = { -- runs every tick while being patted, patters - list of people patting you
+      --function(patters) end
    },
    oncePat = { -- every time someone pats you, entity - entity that is petting you
-      function(entity) end
+      --function(entity) end
    },
+   patting = { -- called every time you are patting someone, you can return true to stop particles
+      --function(entity) end
+   }
 }
 
 local headEvents = { -- this table works like playerEvents table but instead of player its for player heads and every event have extra argument that is position of player head
@@ -44,6 +47,7 @@ local headEvents = { -- this table works like playerEvents table but instead of 
    togglePat = {},
    whilePat = {},
    oncePat = {},
+   patting = {}
 }
 
 -- some useful variables
@@ -54,13 +58,15 @@ local vector3Index = figuraMetatables.Vector3.__index
 local myUuid = avatar:getUUID()
 
 -- events handler
-local eventsList = {player = playerEvents, head = headEvents}
-setmetatable(eventsList, {__index = playerEvents})
+playerEvents.player = playerEvents -- backwards compatibility
+playerEvents.head = headEvents
 
 local function callEvent(group, eventName, ...)
-   for _, func in ipairs(eventsList[group][eventName]) do
-      func(...)
+   local output = {}
+   for _, func in ipairs(playerEvents[group]--[[@as table]][eventName]) do
+      table.insert(output, {func(...)})
    end
+   return output
 end
 
 local myPatters = {player = {}, head = {}}
@@ -173,7 +179,7 @@ end
 -- pings
 function pings.patpat(a, b, c)
    if not player:isLoaded() then return end
-   local avatarVars, pos, boundingBox
+   local avatarVars, pos, boundingBox, pattingOutput
    if b then -- block
       -- decrypt position
       local receivedPos = vec(a, b, c)
@@ -188,7 +194,8 @@ function pings.patpat(a, b, c)
       pos = blockPos + vec(0.5, 0, 0.5)
       boundingBox = vec(0.8, 0.8, 0.8)
       -- call petpet function
-      pcall(avatarVars["petpet.playerHead"], myUuid, config.holdFor, pos.x, pos.y, pos.z)
+      pcall(avatarVars["petpet.playerHead"], myUuid, config.holdFor, blockPos.x, blockPos.y, blockPos.z)
+      pattingOutput = callEvent("head", "patting", blockPos)
    else -- entity
       local entity = world.getEntity(unpackUuid(a))
       if not entity then return end
@@ -202,6 +209,13 @@ function pings.patpat(a, b, c)
       end
       -- call petpet function
       pcall(avatarVars["petpet"], myUuid, config.holdFor)
+      pattingOutput = callEvent("player", "patting", entity)
+   end
+   -- cancel patpat particles when returned true in patting event
+   for _, v in pairs(pattingOutput) do
+      if v[1] then
+         return
+      end
    end
    -- spawn particles
    if avatarVars['patpat.noHearts'] then return end
@@ -214,7 +228,7 @@ function pings.patpat(a, b, c)
 end
 
 -- host only
-if not host:isHost() then return eventsList end
+if not host:isHost() then return playerEvents end
 
 -- update config
 for i, v in ipairs(config.patpatBlocks) do
@@ -236,7 +250,7 @@ local function patPat()
    local block, blockPos = player:getTargetedBlock(true, 5)
    local dist = (myPos - blockPos):length()
    local targetType = "block"
-   
+
    local entity, entityPos = player:getTargetedEntity(5)
    if entity then
       local newDist = (myPos - entityPos):length()
@@ -248,14 +262,14 @@ local function patPat()
    if targetType == "block" then
       if not config.patpatBlocks[block.id] then return end
       if getAvatarVarsFromBlock(block)["patpat.noPats"] then return end
-      local blockPos = block:getPos()
+      local pos = block:getPos()
       local playerPos = player:getPos()
       local playerOffset = vec(
          math.abs(playerPos.x % 64 - 32) > 16 and 1 or 0,
          math.abs(playerPos.y % 64 - 32) > 16 and 1 or 0,
          math.abs(playerPos.z % 64 - 32) > 16 and 1 or 0
       )
-      local finalPos = (blockPos + playerOffset * 32) % 64 + playerOffset * 64
+      local finalPos = (pos + playerOffset * 32) % 64 + playerOffset * 64
       pings.patpat(finalPos:unpack())
    else
       local entityType = entity:getType()
@@ -285,4 +299,4 @@ function events.tick()
 end
 
 -- return, made by Auria
-return eventsList
+return playerEvents
