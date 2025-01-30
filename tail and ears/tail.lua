@@ -11,7 +11,7 @@ local updatingTails = {}
 tail.__index = tail
 
 ---creates new tail physics
----@param model ModelPart|[ModelPart]
+---@param model ModelPart|ModelPart[]
 function tailPhysics.new(model)
    local obj = setmetatable({}, tail)
    obj.config = { -- default config
