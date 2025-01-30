@@ -9,8 +9,8 @@ ears.__index = ears
 local oldPlayerRot
 
 ---creates new ears physics
----@param leftEar ModelPart|[ModelPart]
----@param rightEar ModelPart|[ModelPart]
+---@param leftEar ModelPart
+---@param rightEar ModelPart
 function earsPhysics.new(leftEar, rightEar)
    local obj = setmetatable({}, ears)
    obj.config = { -- default config
