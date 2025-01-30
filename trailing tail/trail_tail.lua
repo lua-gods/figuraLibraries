@@ -7,7 +7,7 @@ local tails = {} ---@type auria.trail_tail[]
 ---@field distances number[]
 ---@field vels Vector3[]
 ---@field oldDir Vector3
----@field config {stiff: number, bounce: number, gravity: Vector3, maxDist: number, maxAngle: number}
+---@field config {stiff: number, bounce: number, floorFriction: number, gravity: Vector3, maxDist: number, maxAngle: number}
 local trailingTail = {}
 
 local worldModel = models:newPart('trail_tails', 'World')
@@ -30,10 +30,10 @@ end
 function lib.new(modelList)
    local tail = {}
    tail.config = {
-      bounce = 0.2,
-      stiff = 0.3,
+      bounce = 0.8,
+      stiff = 0.5,
+      floorFriction = 0.1,
       gravity = vec(0, -0.04, 0),
-      -- gravity = vec(0, 0, 0),
       maxDist = 1.5,
       maxAngle = 20
    }
@@ -121,8 +121,6 @@ local function tickTail(tail)
       local previous = tail.points[i - 1]
       local dist = tail.distances[i]
       local maxDist = tail.distances[i] * tail.config.maxDist
-      -- table.insert(log, tostring(pos - previous))
-      -- table.insert(log, '---')
       local offset = pos - previous
       local offsetLength = offset:length()
       local dir = offsetLength > 0.01 and offset / offsetLength or vec(0, 0, 1) -- prevent normalized vector being length 0 when its vec(0, 0, 0)
@@ -136,42 +134,25 @@ local function tickTail(tail)
             targetDir = vectors.rotateAroundAxis(math.min(angle, maxAngle) - angle, dir, rotAxis):normalize()
          end
       end
-      local targetPos = previous + targetDir * maxDist
+      local targetPos = previous + targetDir * dist
       -- clamp distance
-      pos = previous + dir * math.min(offsetLength, dist)
+      offsetLength = math.min(offsetLength, maxDist)
+      pos = previous + dir * offsetLength
       -- pull or push to desired length
+      local pullPushStrength = offsetLength / dist
+      pullPushStrength = math.abs(pullPushStrength - 1)
+
       local targetOffset = targetPos - pos
-      -- local targetOffset = (targetPos - pos):clamped(0, dist * tail.config.maxDist)
-      -- local pullPushStrength = (previous - pos):length() / (dist * tail.config.maxDist)
-      -- pullPushStrength = math.abs(pullPushStrength - 1)
-      -- pullPushStrength = math.min(pullPushStrength, 1)
-      -- pullPushStrength = pullPushStrength ^ 0.25
-      -- pullPushStrength = pullPushStrength * tail.config.bounce
-      -- table.insert(log, math.floor(pullPushStrength * 10000) / 10000)
-
-      -- pos = targetPos - targetOffset
-
+      
       tail.vels[i] = tail.vels[i] * (1 - tail.config.stiff)
-      tail.vels[i] = tail.vels[i] + targetOffset * tail.config.bounce
-      -- tail.vels[i] = tail.vels[i] + (targetOffset) * pullPushStrength
+      tail.vels[i] = tail.vels[i] + targetOffset * pullPushStrength * tail.config.bounce
       tail.vels[i] = tail.vels[i] + tail.config.gravity
       
       local newPos = pos + tail.vels[i]:clamped(0, 50)
-      
-      -- local pos2 = pos
-      -- local SIDE = ''
-      -- for axis = 1, 3 do
-         -- local endPos = pos:copy()
-         -- endPos[axis] = newPos[axis]
-         -- local _, hitPos, side = raycast:block(pos, endPos, "COLLIDER", "NONE")
-         -- SIDE = SIDE..side..'  '
-         -- if (hitPos - pos):length() > 0.001 then
-            -- pos = hitPos
-         -- end
-      -- end
-      -- table.insert(log, tostring(pos2 - pos))
-      -- table.insert(log, SIDE)
-      -- tail.points[i] = pos
+
+      if isPointInWall(newPos - vec(0, 0.02, 0)) then
+         tail.vels[i] = tail.vels[i] * tail.config.floorFriction
+      end
       
       tail.points[i] = movePointWithCollision(pos, newPos)
 
