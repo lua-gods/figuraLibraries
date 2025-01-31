@@ -1,12 +1,12 @@
 local lib = {}
 local tails = {} ---@type auria.trail_tail[]
 ---@class auria.trail_tail
----@field start ModelPart
 ---@field points Vector3[]
 ---@field oldPoints Vector3[]
 ---@field distances number[]
 ---@field vels Vector3[]
 ---@field oldDir Vector3
+---@field posFunc fun(): pos: Vector3?, dir: Vector3?
 ---@field config {stiff: number, bounce: number, floorFriction: number, gravity: Vector3, maxDist: number, maxAngle: number}
 local trailingTail = {}
 
@@ -25,25 +25,33 @@ local function directionToEular(dirVec)
 end
 
 ---creates new trailing tail
----@param modelList ModelPart[]
+---@param modelList ModelPart[] # all modelparts will be parented to world
+---@param posFunc fun(): pos: Vector3?, dir: Vector3? # posFunc will be called every tick it should return position and direction of tail, you can use modelpart:partToWorldMatrix and :apply, :applyDir or player:getPos() and some extra math for less delay
 ---@return auria.trail_tail
-function lib.new(modelList)
+function lib.new(modelList, posFunc)
    local tail = {}
    tail.config = {
       bounce = 0.8,
       stiff = 0.5,
       floorFriction = 0.1,
       gravity = vec(0, -0.04, 0),
-      maxDist = 1.5,
-      maxAngle = 20
+      maxDist = 1.2,
+      maxAngle = 10,
+      models = modelList
    }
+   tail.posFunc = posFunc
    tail.points = {}
    tail.distances = {}
-
-   for _ = 1, 20 do
-      table.insert(tail.distances, 0.2)
+   -- get distances
+   local pivot = modelList[1]:getPivot()
+   for i = 2, #modelList do
+      local newPivot = modelList[i]:getPivot()
+      local dist = (newPivot - pivot):length()
+      pivot = newPivot
+      table.insert(tail.distances, dist / 16)
    end
-
+   table.insert(tail.distances, tail.distances[#tail.distances])
+   -- generate data for points
    tail.vels = {}
    tail.points[0] = vec(0, 0, 0)
    tail.oldPoints = {[0] = vec(0, 0, 0)}
@@ -53,22 +61,23 @@ function lib.new(modelList)
       tail.points[i] = vec(0, 0, 0)
       tail.oldPoints[i] = vec(0, 0, 0)
    end
-
-   tail.start = models:newPart(''):pivot(0, 14, 2)
-
+   -- parent to world
+   for i, model in pairs(modelList) do
+      model:setParentType('World')
+      local k = i - 1
+      local offset = model:getPivot()
+      model.preRender = function(delta)
+         local pos = math.lerp(tail.oldPoints[k], tail.points[k], delta)
+         local nextPos = math.lerp(tail.oldPoints[i], tail.points[i], delta)
+         local rot = directionToEular(nextPos - pos)
+         model:setPos(pos * 16 - offset)
+         model:setRot(rot)
+      end
+   end
+   -- add tail and return
    local id = #tails + 1
    tails[id] = tail
    return tail
-end
-
-local function debugPoint(pos, color)
-   particles['end_rod']
-      :pos(pos)
-      :color(color or vec(1, 1, 1))
-      :scale(0.5)
-      :lifetime(2)
-      :gravity(0)
-      :spawn()
 end
 
 ---@overload fun(Pos: Vector3): Vector3?
@@ -107,12 +116,13 @@ local function tickTail(tail)
       tail.oldPoints[i] = v
    end
 
-   local startWorldMat = tail.start:partToWorldMatrix()
-   if startWorldMat.v11 == startWorldMat.v11 then -- check if not NaN
-      tail.points[0] = startWorldMat:apply()
-      tail.oldDir = startWorldMat:applyDir(0, 0, 1):normalize()
+   local newTailPos, newTailDir = tail.posFunc()
+   if newTailPos and newTailPos.x == newTailPos.x then
+      tail.points[0] = newTailPos
    end
-   tail.points[0] = player:getPos() + vec(0, 12 / 16, 0)
+   if newTailDir and newTailDir.x == newTailDir.x then
+      tail.oldDir = newTailDir
+   end
 
    log = {}
 
