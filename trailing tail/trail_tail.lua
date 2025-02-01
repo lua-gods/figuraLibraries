@@ -12,12 +12,6 @@ local trailingTail = {}
 
 local worldModel = models:newPart('trail_tails', 'World')
 
--- variables for optimziation
-local min = math.min
-local max = math.max
-local getBlockState = world.getBlockState
-local table_insert = table.insert
-
 local function directionToEular(dirVec)
    local yaw = math.atan2(dirVec.x, dirVec.z)
    local pitch = math.atan2(dirVec.y, dirVec.xz:length())
@@ -33,8 +27,8 @@ function lib.new(modelList, posFunc)
    tail.config = {
       bounce = 0.8,
       stiff = 0.5,
-      floorFriction = 0.1,
-      gravity = vec(0, -0.04, 0),
+      floorFriction = 0.2,
+      gravity = vec(0, -0.08, 0),
       maxDist = 1.2,
       maxAngle = 10,
       models = modelList
@@ -157,12 +151,11 @@ local function tickTail(tail)
       tail.vels[i] = tail.vels[i] * (1 - tail.config.stiff)
       tail.vels[i] = tail.vels[i] + targetOffset * pullPushStrength * tail.config.bounce
       tail.vels[i] = tail.vels[i] + tail.config.gravity
-      
-      local newPos = pos + tail.vels[i]:clamped(0, 50)
-
-      if isPointInWall(newPos - vec(0, 0.02, 0)) then
+      if isPointInWall(pos - vec(0, 0.02, 0)) then
          tail.vels[i] = tail.vels[i] * tail.config.floorFriction
       end
+      
+      local newPos = pos + tail.vels[i]:clamped(0, 50)
       
       tail.points[i] = movePointWithCollision(pos, newPos)
 

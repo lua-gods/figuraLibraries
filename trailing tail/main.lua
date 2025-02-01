@@ -12,7 +12,7 @@ trailTail.new({
    local pos = player:getPos() + vec(0, 0.2, 0)
    local yaw = player:getBodyYaw()
    local dir = vectors.rotateAroundAxis(-yaw, vec(0, 0, -1), vec(0, 1, 0))
-   return pos, dir
+   return pos + dir * 0.1, dir
 end)
 
 -- hide legs

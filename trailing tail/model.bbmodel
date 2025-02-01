@@ -24,12 +24,12 @@
 			"light_emission": 0,
 			"render_order": "default",
 			"allow_mirror_modeling": true,
-			"from": [-3.95, -1.5, 1],
-			"to": [3.95, 6.5, 12],
+			"from": [-3.95, -1.39778, 0.22354],
+			"to": [3.95, 6.60222, 11.22354],
 			"autouv": 0,
 			"color": 8,
 			"rotation": [-15, 0, 0],
-			"origin": [0, 2.5, 6],
+			"origin": [0, 5.5, 6],
 			"faces": {
 				"north": {
 					"uv": [11, 11, 18, 19],
@@ -71,7 +71,7 @@
 			"to": [3.5, 7, 21],
 			"autouv": 0,
 			"color": 8,
-			"origin": [0, 3.5, 15.5],
+			"origin": [0, 5.5, 6],
 			"uv_offset": [0, 19],
 			"faces": {
 				"north": {
@@ -114,7 +114,7 @@
 			"to": [3, 6, 30],
 			"autouv": 0,
 			"color": 8,
-			"origin": [0, 3, 24.5],
+			"origin": [0, 5.5, 6],
 			"uv_offset": [36, 0],
 			"faces": {
 				"north": {
@@ -157,7 +157,7 @@
 			"to": [2.5, 5, 38],
 			"autouv": 0,
 			"color": 8,
-			"origin": [0, 2.5, 33],
+			"origin": [0, 5.5, 6],
 			"uv_offset": [36, 17],
 			"faces": {
 				"north": {
@@ -200,7 +200,7 @@
 			"to": [2, 4, 46],
 			"autouv": 0,
 			"color": 8,
-			"origin": [0, 2, 41],
+			"origin": [0, 5.5, 6],
 			"uv_offset": [36, 32],
 			"faces": {
 				"north": {
@@ -243,7 +243,7 @@
 			"to": [1.5, 3, 53],
 			"autouv": 0,
 			"color": 8,
-			"origin": [0, 1.5, 48.5],
+			"origin": [0, 5.5, 6],
 			"uv_offset": [24, 46],
 			"faces": {
 				"north": {
@@ -286,7 +286,7 @@
 			"to": [1, 2, 60],
 			"autouv": 0,
 			"color": 8,
-			"origin": [0, 1, 55.5],
+			"origin": [0, 5.5, 6],
 			"uv_offset": [48, 46],
 			"faces": {
 				"north": {
@@ -387,7 +387,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["a818b8fc-8907-cca0-0d4d-1dfd68c02e67"]
 		},
 		{
@@ -401,7 +401,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["22b2b829-ac3e-de4a-cef9-18c35c9435a0"]
 		},
 		{
@@ -415,7 +415,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["d16563bb-f74a-f3e6-9c16-ea7e74af4544"]
 		},
 		{
@@ -429,7 +429,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["6e9e6b68-7622-562d-36ef-8acab3ac863c"]
 		},
 		{
@@ -443,7 +443,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["9a45c6af-b8e5-826e-8e7e-9313042595a5"]
 		},
 		{
@@ -457,7 +457,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["b2b967d7-d6d1-5367-4fa1-76be9dfa0c35"]
 		},
 		{
@@ -471,7 +471,7 @@
 			"locked": false,
 			"visibility": true,
 			"autouv": 0,
-			"selected": true,
+			"selected": false,
 			"children": ["095671c1-0450-4725-578e-1ac4b477430c"]
 		}
 	],
