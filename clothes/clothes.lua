@@ -25,7 +25,7 @@ end
 ---creates new clothes handler
 ---@param name string -- used in pings
 ---@param textureSize Vector2
----@param modelpartsList {[string]: ModelPart[]|{[number]: ModelPart, uvSize: Vector2}} -- modelparts used for clothes layers should be cube or mesh
+---@param modelpartsList {[string]: ModelPart[]|{[number]: ModelPart, uvSize: Vector2?, addToParent: boolean?}} -- modelparts used for clothes layers should be cube or mesh
 ---@param groups {title: string, texture?: Texture, models: string[], distance: number, modelparts: ModelPart[], enableModels?: {[number]: {[1]: ModelPart, [2]: Vector2}}}[]
 ---@param defaultOutfit? {[string]: Vector4}
 ---@param configName? string -- if provided the clothes will be stored in config with this name
@@ -108,7 +108,11 @@ function lib.new(name, textureSize, modelpartsList, groups, defaultOutfit, confi
                end
             end
          end
-         model:addChild(modelsGroup)
+         if modelparts.addToParent then
+            model:getParent():addChild(modelsGroup)
+         else
+            model:addChild(modelsGroup)
+         end
       end
    end
    -- update
