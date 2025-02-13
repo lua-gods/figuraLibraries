@@ -1,0 +1,1 @@
+D:/GNs Figura Rewrite Library/avatars/A/GN's Avatar/singletons/wait.lua
