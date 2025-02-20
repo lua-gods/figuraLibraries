@@ -13,7 +13,7 @@ local oldPlayerRot
 ---@param rightEar ModelPart
 function earsPhysics.new(leftEar, rightEar)
    local obj = setmetatable({}, ears)
-   obj.config = { -- default config
+   obj.config = { -- default config, please use tail:setConfig to set config, dont edit this table
       velocityStrength = 1, -- velocity strength, can also be Vector3
       headRotStrength = 0.4, -- how much ears should rotate when head moved up or down
 
@@ -31,6 +31,9 @@ function earsPhysics.new(leftEar, rightEar)
 
       rotMin = vec(-12, -8, -4), -- rotation limit
       rotMax = vec(12, 8, 6), -- rotation limit
+
+      headRotMin = -90, -- minimum rotation for head rotation
+      headRotMax = 90, -- maximum rotation for head rotation
    }
    -- model
    obj.leftEar = leftEar
@@ -92,7 +95,7 @@ local function tickEars(obj, playerVel, playerRotVel, isCrouching, playerRot)
       targetRotZW = targetRotZW + v
    end
    local targetRot = vec(
-      obj.config.headRotStrength * -playerRot.x,
+      math.clamp(obj.config.headRotStrength * -playerRot.x, obj.config.headRotMin, obj.config.headRotMax),
       0,
       targetRotZW,
       -targetRotZW
