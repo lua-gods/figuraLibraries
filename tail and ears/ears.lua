@@ -13,7 +13,7 @@ local oldPlayerRot
 ---@param rightEar ModelPart
 function earsPhysics.new(leftEar, rightEar)
    local obj = setmetatable({}, ears)
-   obj.config = { -- default config, please use tail:setConfig to set config, dont edit this table
+   obj.config = { -- default config, please use ears:setConfig to set config, dont edit this table
       velocityStrength = 1, -- velocity strength, can also be Vector3
       headRotStrength = 0.4, -- how much ears should rotate when head moved up or down
 
